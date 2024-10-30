@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: "demo.webflux.encryption"
+  output:
+    ansi:
+      enabled: always
+logging:
+  level:
+    com.jpdr.apps.demo.encryption: DEBUG
+app:
+  key:
+    public: ${APP_KEY_PUBLIC}
+    private: ${APP_KEY_PRIVATE}
