@@ -2,14 +2,12 @@ package com.jpdr.apps.demo.webflux.encryption.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpdr.apps.demo.webflux.encryption.exception.MissingParameterException;
 import com.jpdr.apps.demo.webflux.encryption.service.AppService;
 import com.jpdr.apps.demo.webflux.encryption.service.EncryptionService;
 import com.jpdr.apps.demo.webflux.encryption.service.dto.PayloadDto;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -23,29 +21,21 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class AppServiceImpl implements AppService {
   
-  public static final String PUBLIC_KEY_PROPERTY = "app.key.public";
-  public static final String PRIVATE_KEY_PROPERTY = "app.key.private";
-  
   private final EncryptionService encryptionService;
-  private final Environment env;
   private final ObjectMapper objectMapper;
   
-  @PostConstruct
-  public void postConstruct(){
-    if(env.getProperty(PUBLIC_KEY_PROPERTY) == null){
-      throw new MissingParameterException(PUBLIC_KEY_PROPERTY);
-    }
-    if(env.getProperty(PRIVATE_KEY_PROPERTY) == null){
-      throw new MissingParameterException(PRIVATE_KEY_PROPERTY);
-    }
-  }
+  @Value("${app.key.public}")
+  private String publicKey;
+  
+  @Value("${app.key.private}")
+  private String privateKey;
   
   @Override
   public Mono<PayloadDto> encryptPayload(Object payload) {
     return Mono.zip(
         Mono.from(this.writeValueAsString(payload))
           .map(decryptedPayload -> decryptedPayload.getBytes(StandardCharsets.UTF_8)),
-        Mono.from(Mono.just(env.getProperty(PUBLIC_KEY_PROPERTY))),
+        Mono.just(this.publicKey),
         Mono.from(this.encryptionService.getHeaderKeyBytes()),
         Mono.from(this.encryptionService.getHeaderVectorBytes()))
       .flatMap(tuple -> Mono.zip(
@@ -63,7 +53,7 @@ public class AppServiceImpl implements AppService {
   @Override
   public Mono<Object> decryptPayload(PayloadDto payload, String key, String vector) {
     return Mono.from(this.encryptionService.decryptAES(payload.getData(),
-        vector,key,env.getProperty(PRIVATE_KEY_PROPERTY)))
+        vector,key,this.privateKey))
       .flatMap(this::readTree);
   }
   
