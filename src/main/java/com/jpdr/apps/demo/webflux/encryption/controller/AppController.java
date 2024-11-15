@@ -20,16 +20,16 @@ public class AppController {
   private final AppService appService;
   
   @PostMapping("/encryption/encrypt")
-  public ResponseEntity<Mono<PayloadDto>> encrypt(@RequestBody Object payload) {
-    return new ResponseEntity<>(appService.encryptPayload(payload),HttpStatus.OK);
+  public Mono<ResponseEntity<PayloadDto>> encrypt(@RequestBody Object payload) {
+    return this.appService.encryptPayload(payload)
+      .map(encryptedPayload -> new ResponseEntity<>(encryptedPayload,HttpStatus.OK));
   }
   
   @PostMapping("/encryption/decrypt")
-  public ResponseEntity<Mono<Object>> encrypt(
-    @RequestHeader(name = "key") String key,
-    @RequestHeader(name = "vector") String vector,
-    @RequestBody PayloadDto payload) {
-    return new ResponseEntity<>(appService.decryptPayload(payload,key,vector), HttpStatus.OK);
+  public Mono<ResponseEntity<Object>> encrypt(@RequestHeader(name = "key") String key,
+    @RequestHeader(name = "vector") String vector, @RequestBody PayloadDto payload) {
+    return this.appService.decryptPayload(payload,key,vector)
+      .map(decryptedPayload -> new ResponseEntity<>(decryptedPayload, HttpStatus.OK));
   }
   
   
